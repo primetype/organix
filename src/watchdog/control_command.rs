@@ -123,9 +123,7 @@ impl WatchdogQuery {
     }
 
     /// require the watchdog to start the given service if not already started
-    pub async fn start<T: Service>(
-        &mut self,
-    ) -> Result<(), WatchdogError> {
+    pub async fn start<T: Service>(&mut self) -> Result<(), WatchdogError> {
         let (reply, receiver) = oneshot::channel();
 
         let command = ControlCommand::Start {
@@ -147,9 +145,7 @@ impl WatchdogQuery {
     }
 
     /// require the watchdog to stop the given service if not already stopped
-    pub async fn stop<T: Service>(
-        &mut self,
-    ) -> Result<(), WatchdogError> {
+    pub async fn stop<T: Service>(&mut self) -> Result<(), WatchdogError> {
         let (reply, receiver) = oneshot::channel();
 
         let command = ControlCommand::Stop {
