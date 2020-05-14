@@ -1,8 +1,12 @@
 # Organix
 
+|||
+|----------:|:------|
+| CI Checks | ![C.I. Checks](https://github.com/primetype/organix/workflows/C.I.%20Checks/badge.svg) |
+
 Organize complex application with services plugged in together.
 
-Tube is an opinionated way to build applications with multiple components.
+Organix is an opinionated way to build applications with multiple components.
 
 ## How to use
 
