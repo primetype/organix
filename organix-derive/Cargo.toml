@@ -5,9 +5,9 @@ authors = ["Nicolas Di Prima <nicolas@primetype.co.uk>"]
 edition = "2018"
 license = "Apache-2.0 OR MIT"
 readme = "../README.md"
-repository = "https://github.com/primetype/tube"
+repository = "https://github.com/primetype/organix"
 description = """
-Process and service management and API
+Building organic application in rust, leveraging tokio and defining inter communication layer mechanism
 """
 
 [lib]
