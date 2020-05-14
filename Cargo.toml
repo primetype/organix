@@ -1,0 +1,31 @@
+[package]
+name = "organix"
+version = "0.1.0"
+authors = [
+        "Nicolas Di Prima <nicolas@primetype.co.uk>",
+    ]
+edition = "2018"
+license = "Apache-2.0 OR MIT"
+readme = "README.md"
+repository = "https://github.com/primetype/tube"
+description = """
+Process and service management and API
+"""
+
+[dependencies]
+organix-derive = { version = "0.1.0", path = "./organix-derive" }
+tokio = { version = "^0.2.21", features = ["sync", "rt-threaded", "parking_lot", "time"] }
+tracing = "^0.1.13"
+tracing-futures = "^0.2.3"
+futures-util = "0.3"
+thiserror = "1.0"
+async-trait = "^0.1.29"
+
+[dev-dependencies]
+approx = "0.3"
+tokio = { version = "^0.2.21", features = ["full"] }
+tokio-compat = "^0.1.5"
+tracing-subscriber = "0.2.5"
+
+[workspace]
+members = [ "organix-derive" ]
