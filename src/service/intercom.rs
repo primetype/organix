@@ -126,24 +126,23 @@ impl<T: Service> Intercom<T> {
         let mut retry = Err(msg);
 
         while let Err(msg) = retry {
-            retry =
-                match &mut self.state {
-                    IntercomState::Connected { connection } => {
-                        tracing::trace!("sending message");
-                        let r = connection.send(msg).in_current_span().await.map_err(
-                            |SendError(msg)| {
-                                tracing::trace!("failed to send message");
-                                msg
-                            },
-                        );
-                        connection.sent_counter.fetch_add(1, Ordering::SeqCst);
-                        r
-                    }
-                    _ => {
-                        tracing::debug!("service not connected");
-                        Err(msg)
-                    }
-                };
+            retry = match &mut self.state {
+                IntercomState::Connected { connection } => {
+                    tracing::trace!("sending message");
+                    connection
+                        .send(msg)
+                        .in_current_span()
+                        .await
+                        .map_err(|SendError(msg)| {
+                            tracing::trace!("failed to send message");
+                            msg
+                        })
+                }
+                _ => {
+                    tracing::debug!("service not connected");
+                    Err(msg)
+                }
+            };
 
             if retry.is_err() && retry_attempted {
                 tracing::error!("cannot connect to service");
@@ -269,6 +268,7 @@ impl IntercomStats {
 
 impl<T> IntercomSender<T> {
     async fn send(&mut self, t: T) -> Result<(), SendError<T>> {
+        self.sent_counter.fetch_add(1, Ordering::SeqCst);
         self.sender
             .send((Instant::now(), t))
             .await
@@ -276,6 +276,7 @@ impl<T> IntercomSender<T> {
     }
 
     fn try_send(&mut self, t: T) -> Result<(), TrySendError<T>> {
+        self.sent_counter.fetch_add(1, Ordering::SeqCst);
         self.sender
             .try_send((Instant::now(), t))
             .map_err(|err| match err {
