@@ -8,7 +8,10 @@ use std::sync::{
 };
 use std::time::Instant;
 use tokio::sync::{
-    mpsc::{self, error::SendError},
+    mpsc::{
+        self,
+        error::{SendError, TrySendError},
+    },
     oneshot,
 };
 use tracing_futures::Instrument as _;
@@ -94,6 +97,21 @@ impl<T: Service> Intercom<T> {
         Self {
             state: IntercomState::NotConnected,
             watchdog_query,
+        }
+    }
+
+    /// try to send the message to the given service
+    ///
+    /// This function is non blocking version of `send` but without the `retry`
+    /// attempts
+    #[tracing::instrument(skip(self), target = "intercom", level = "debug")]
+    pub fn try_send(&mut self, msg: T::IntercomMsg) -> Result<(), TrySendError<T::IntercomMsg>> {
+        match &mut self.state {
+            IntercomState::Connected { connection } => {
+                tracing::trace!("sending message");
+                connection.try_send(msg)
+            }
+            _ => Err(TrySendError::Closed(msg)),
         }
     }
 
@@ -255,6 +273,15 @@ impl<T> IntercomSender<T> {
             .send((Instant::now(), t))
             .await
             .map_err(|SendError((_, t))| SendError(t))
+    }
+
+    fn try_send(&mut self, t: T) -> Result<(), TrySendError<T>> {
+        self.sender
+            .try_send((Instant::now(), t))
+            .map_err(|err| match err {
+                TrySendError::Full((_, t)) => TrySendError::Full(t),
+                TrySendError::Closed((_, t)) => TrySendError::Closed(t),
+            })
     }
 }
 
