@@ -100,6 +100,50 @@ impl<T: Service> Intercom<T> {
         }
     }
 
+    pub async fn wait_service_started(&mut self) -> Result<(), WatchdogError> {
+        use crate::service::Status;
+        let mut retry_attempted = false;
+
+        loop {
+            if let Ok(status_report) = self.watchdog_query.status::<T>().await {
+                match status_report.status {
+                    Status::Started { .. } => {
+                        tracing::debug!(retry_attempted, "started");
+                        return Ok(());
+                    }
+                    Status::Starting { .. } => {
+                        tracing::trace!(retry_attempted, "starting, checking again a bit later...");
+                        tokio::time::delay_for(std::time::Duration::from_millis(50)).await;
+                    }
+                    Status::ShuttingDown { .. } => {
+                        tracing::debug!(retry_attempted, "shutting down");
+                        if retry_attempted {
+                            return Err(WatchdogError::CannotConnectToService {
+                                service_identifier: T::SERVICE_IDENTIFIER,
+                                retry_attempted,
+                            });
+                        } else {
+                            retry_attempted = true;
+                            tokio::time::delay_for(std::time::Duration::from_millis(100)).await;
+                        }
+                    }
+                    Status::Shutdown { .. } => {
+                        tracing::debug!(retry_attempted, "shutdown");
+                        if retry_attempted {
+                            return Err(WatchdogError::CannotConnectToService {
+                                service_identifier: T::SERVICE_IDENTIFIER,
+                                retry_attempted,
+                            });
+                        } else {
+                            retry_attempted = true;
+                            tokio::time::delay_for(std::time::Duration::from_millis(100)).await;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     /// try to send the message to the given service
     ///
     /// This function is non blocking version of `send` but without the `retry`
